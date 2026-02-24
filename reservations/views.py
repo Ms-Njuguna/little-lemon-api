@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import permissions, status
 from datetime import date as date_cls
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 
 from .services import get_available_tables
 
@@ -69,6 +70,21 @@ class ReservationViewSet(viewsets.ModelViewSet):
 class AvailabilityView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(name="date", required=True, type=str, description="YYYY-MM-DD"),
+            OpenApiParameter(name="time_slot_id", required=True, type=int, description="TimeSlot id"),
+            OpenApiParameter(name="guests", required=True, type=int, description="Number of guests"),
+        ],
+        examples=[
+            OpenApiExample(
+                "Example request",
+                value={"date": "2026-03-01", "time_slot_id": 2, "guests": 4},
+                request_only=True,
+            ),
+        ],
+    )
+
     def get(self, request):
         date_str = request.query_params.get("date")
         time_slot_id = request.query_params.get("time_slot_id")
@@ -87,14 +103,18 @@ class AvailabilityView(APIView):
         except ValueError:
             return Response({"detail": "Invalid date/time_slot_id/guests format."}, status=400)
 
-        slot, tables = get_available_tables(date=booking_date, time_slot_id=time_slot_id, guests=guests)
+        slot, tables = get_available_tables(
+            date=booking_date,
+            time_slot_id=time_slot_id,
+            guests=guests
+        )
 
-        if slot == []:
-            # This won't happen due to our logic, but leaving it safe
-            pass
-
+        # If slot doesn't exist or inactive
         if slot is None:
-            return Response({"detail": "Time slot not found."}, status=404)
+           return Response(
+                {"detail": "Time slot not found or inactive."},
+                status=404
+            )
 
         # if slot exists but inactive, we returned empty list via DoesNotExist logic
         if isinstance(slot, list):
