@@ -166,6 +166,41 @@ class ReservationViewSet(viewsets.ModelViewSet):
             ReservationSerializer(reservation).data,
             status=status.HTTP_200_OK
         )
+    
+    @action(detail=True, methods=["post"], url_path="confirm")
+    def confirm(self, request, pk=None):
+        reservation = self.get_object()
+
+        # Only staff/admin can confirm
+        if request.user.role not in ["staff", "admin"]:
+            return Response(
+                {"detail": "Only staff/admin can confirm reservations."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Prevent invalid transitions
+        if reservation.status == "cancelled":
+            return Response(
+                {"detail": "Cancelled reservations cannot be confirmed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if reservation.status == "completed":
+            return Response(
+                {"detail": "Completed reservations cannot be confirmed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if reservation.status == "confirmed":
+            return Response(
+                {"detail": "Reservation is already confirmed."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        reservation.status = "confirmed"
+        reservation.save(update_fields=["status"])
+
+        return Response(ReservationSerializer(reservation).data, status=status.HTTP_200_OK)
 
 class AvailabilityView(APIView):
     permission_classes = [permissions.AllowAny]
