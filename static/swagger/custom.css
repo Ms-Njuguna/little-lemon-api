@@ -1,0 +1,18 @@
+/* Make the header feel branded */
+.swagger-ui .topbar {
+  background-color: #0b0b0f;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.swagger-ui .topbar .download-url-wrapper {
+  display: none;
+}
+
+/* Round buttons + calm spacing */
+.swagger-ui .btn {
+  border-radius: 10px;
+}
+
+/* Reduce visual noise */
+.swagger-ui .opblock-summary-description {
+  opacity: 0.7;
+}
