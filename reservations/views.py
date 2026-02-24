@@ -7,6 +7,8 @@ from django.db import transaction
 from rest_framework import permissions, status
 from datetime import date as date_cls
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from .permissions import ReadOnlyOrStaff, IsOwnerOrStaff
+from rest_framework.permissions import IsAuthenticated
 
 from .services import get_available_tables
 
@@ -14,14 +16,16 @@ class DiningTableViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     queryset = DiningTable.objects.all().order_by("table_number")
     serializer_class = DiningTableSerializer
+    permission_classes = [ReadOnlyOrStaff]
 
 class TimeSlotViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     queryset = TimeSlot.objects.all().order_by("start_time")
     serializer_class = TimeSlotSerializer
+    permission_classes = [ReadOnlyOrStaff]
 
 class ReservationViewSet(viewsets.ModelViewSet):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrStaff]
     queryset = Reservation.objects.all().order_by("-created_at")
 
     def get_serializer_class(self):
@@ -30,8 +34,14 @@ class ReservationViewSet(viewsets.ModelViewSet):
         return ReservationSerializer
 
     def get_queryset(self):
-        # users only see their own reservations
-        return Reservation.objects.filter(user=self.request.user).order_by("-created_at")
+        user = self.request.user
+
+        # Staff/admin see all
+        if user.role in ["staff", "admin"]:
+            return Reservation.objects.all()
+
+        # Customers see only theirs
+        return Reservation.objects.filter(user=user)
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
