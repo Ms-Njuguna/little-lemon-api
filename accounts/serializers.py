@@ -14,3 +14,8 @@ class SignupSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password")
         user = User.objects.create_user(password=password, **validated_data)
         return user
+    
+class MeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "full_name", "email", "phone", "role", "created_at"]
