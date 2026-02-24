@@ -7,6 +7,7 @@ from django.db import transaction
 from rest_framework import permissions, status
 from rest_framework import status as http_status
 from datetime import date as date_cls
+from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from .permissions import ReadOnlyOrStaff, IsOwnerOrStaff
 from rest_framework.permissions import IsAuthenticated
@@ -116,6 +117,21 @@ class ReservationViewSet(viewsets.ModelViewSet):
         reservation.save(update_fields=["status"])
 
         return Response(ReservationSerializer(reservation).data, status=http_status.HTTP_200_OK)
+    
+    @action(detail=False, methods=["get"], url_path="upcoming", permission_classes=[IsAuthenticated])
+    def upcoming(self, request):
+        today = date_cls.today()
+        user = request.user
+
+        qs = Reservation.objects.filter(date__gte=today)
+
+        # Customers see only theirs
+        if user.role not in ["staff", "admin"]:
+            qs = qs.filter(user=user)
+
+        qs = qs.select_related("time_slot", "table", "user").order_by("date", "time_slot__start_time")
+
+        return Response(ReservationSerializer(qs, many=True).data)
 
 class AvailabilityView(APIView):
     permission_classes = [permissions.AllowAny]
