@@ -1,8 +1,9 @@
 from rest_framework import viewsets, permissions
 from .models import DiningTable, TimeSlot, Reservation
-from .serializers import DiningTableSerializer, TimeSlotSerializer, ReservationSerializer
+from .serializers import DiningTableSerializer, TimeSlotSerializer, ReservationSerializer, ReservationCreateSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.db import transaction
 from rest_framework import permissions, status
 from datetime import date as date_cls
 
@@ -21,7 +22,49 @@ class TimeSlotViewSet(viewsets.ModelViewSet):
 class ReservationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = Reservation.objects.all().order_by("-created_at")
-    serializer_class = ReservationSerializer
+
+    def get_serializer_class(self):
+        if self.action in ["create"]:
+            return ReservationCreateSerializer
+        return ReservationSerializer
+
+    def get_queryset(self):
+        # users only see their own reservations
+        return Reservation.objects.filter(user=self.request.user).order_by("-created_at")
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        time_slot = serializer.validated_data["time_slot"]
+        booking_date = serializer.validated_data["date"]
+        guests = serializer.validated_data["guests"]
+
+        # 1) slot must be active
+        if not TimeSlot.objects.filter(id=time_slot.id, is_active=True).exists():
+            return Response({"detail": "This time slot is not active."}, status=400)
+
+        # 2) find available tables
+        _, available = get_available_tables(date=booking_date, time_slot_id=time_slot.id, guests=guests)
+
+        if not available:
+            return Response({"detail": "No tables available for that date/time/guests."}, status=409)
+
+        chosen_table = available[0]  # smallest fitting, due to ordering
+
+        reservation = Reservation.objects.create(
+            user=request.user,
+            table=chosen_table,
+            time_slot=time_slot,
+            date=booking_date,
+            guests=guests,
+            special_request=serializer.validated_data.get("special_request", ""),
+            status="pending",
+        )
+
+        output = ReservationSerializer(reservation).data
+        return Response(output, status=status.HTTP_201_CREATED)
 
 class AvailabilityView(APIView):
     permission_classes = [permissions.AllowAny]
