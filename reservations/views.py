@@ -132,6 +132,40 @@ class ReservationViewSet(viewsets.ModelViewSet):
         qs = qs.select_related("time_slot", "table", "user").order_by("date", "time_slot__start_time")
 
         return Response(ReservationSerializer(qs, many=True).data)
+    
+    @action(detail=True, methods=["post"], url_path="cancel")
+    def cancel(self, request, pk=None):
+
+        reservation = self.get_object()
+
+        # Customers can only cancel their own reservation
+        if request.user.role == "customer" and reservation.user != request.user:
+            return Response(
+                {"detail": "You cannot cancel someone else's reservation."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # Cannot cancel completed reservations
+        if reservation.status == "completed":
+            return Response(
+                {"detail": "Completed reservations cannot be cancelled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Already cancelled
+        if reservation.status == "cancelled":
+            return Response(
+                {"detail": "Reservation is already cancelled."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        reservation.status = "cancelled"
+        reservation.save(update_fields=["status"])
+
+        return Response(
+            ReservationSerializer(reservation).data,
+            status=status.HTTP_200_OK
+        )
 
 class AvailabilityView(APIView):
     permission_classes = [permissions.AllowAny]
