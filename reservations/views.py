@@ -1,10 +1,11 @@
 from rest_framework import viewsets, permissions
 from .models import DiningTable, TimeSlot, Reservation
-from .serializers import DiningTableSerializer, TimeSlotSerializer, ReservationSerializer, ReservationCreateSerializer
+from .serializers import ReservationStatusSerializer, DiningTableSerializer, TimeSlotSerializer, ReservationSerializer, ReservationCreateSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db import transaction
 from rest_framework import permissions, status
+from rest_framework import status as http_status
 from datetime import date as date_cls
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from .permissions import ReadOnlyOrStaff, IsOwnerOrStaff
@@ -76,6 +77,45 @@ class ReservationViewSet(viewsets.ModelViewSet):
 
         output = ReservationSerializer(reservation).data
         return Response(output, status=status.HTTP_201_CREATED)
+    
+    def get_serializer_class(self):
+        if self.action == "create":
+            return ReservationCreateSerializer
+        if self.action in ["partial_update", "update"]:
+            # Only allow status edits via PATCH/PUT
+            return ReservationStatusSerializer
+        return ReservationSerializer
+
+    def partial_update(self, request, *args, **kwargs):
+        reservation = self.get_object()  # IsOwnerOrStaff applies here
+
+        serializer = self.get_serializer(reservation, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        new_status = serializer.validated_data.get("status")
+        if new_status is None:
+            return Response({"detail": "Provide 'status'."}, status=http_status.HTTP_400_BAD_REQUEST)
+
+        user_role = request.user.role
+
+        if user_role == "customer":
+            if new_status != "cancelled":
+                return Response(
+                    {"detail": "Customers can only cancel reservations."},
+                    status=http_status.HTTP_403_FORBIDDEN,
+                )
+
+        if user_role in ["staff", "admin"]:
+            if new_status not in ["confirmed", "completed", "cancelled", "pending"]:
+                return Response(
+                    {"detail": "Invalid status value."},
+                    status=http_status.HTTP_400_BAD_REQUEST,
+                )
+
+        reservation.status = new_status
+        reservation.save(update_fields=["status"])
+
+        return Response(ReservationSerializer(reservation).data, status=http_status.HTTP_200_OK)
 
 class AvailabilityView(APIView):
     permission_classes = [permissions.AllowAny]
