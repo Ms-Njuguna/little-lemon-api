@@ -169,3 +169,12 @@ SPECTACULAR_SETTINGS = {
     # Optional: your own favicon
     # "SWAGGER_UI_FAVICON_HREF": "/static/swagger/favicon.ico",
 }
+
+EMAIL_BACKEND = os.getenv(
+    "EMAIL_BACKEND",
+    "django.core.mail.backends.console.EmailBackend"
+)
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "Little Lemon <no-reply@littlelemon.com>"
+)
