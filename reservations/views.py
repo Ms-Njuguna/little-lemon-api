@@ -11,6 +11,7 @@ from rest_framework.decorators import action
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
 from .permissions import ReadOnlyOrStaff, IsOwnerOrStaff
 from rest_framework.permissions import IsAuthenticated
+from .emails import send_reservation_created_email, send_reservation_confirmed_email, send_reservation_cancelled_email
 
 from .services import get_available_tables
 
@@ -76,6 +77,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
             status="pending",
         )
 
+        send_reservation_created_email(request.user, reservation)
         output = ReservationSerializer(reservation).data
         return Response(output, status=status.HTTP_201_CREATED)
     
@@ -115,6 +117,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
 
         reservation.status = new_status
         reservation.save(update_fields=["status"])
+        send_reservation_confirmed_email(reservation.user, reservation)
 
         return Response(ReservationSerializer(reservation).data, status=http_status.HTTP_200_OK)
     
@@ -161,6 +164,7 @@ class ReservationViewSet(viewsets.ModelViewSet):
 
         reservation.status = "cancelled"
         reservation.save(update_fields=["status"])
+        send_reservation_cancelled_email(reservation.user, reservation)
 
         return Response(
             ReservationSerializer(reservation).data,
