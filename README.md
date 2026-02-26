@@ -4,6 +4,16 @@ A production-style restaurant reservations backend powering the Little Lemon fro
 
 ---
 
+## Live Demo
+
+Swagger Docs:
+https://little-lemon-api-bdsl.onrender.com/api/docs/
+
+ReDoc:
+https://little-lemon-api-bdsl.onrender.com/api/redoc/
+
+---
+
 ## Features
 
 - JWT Auth (login/signup/refresh)
