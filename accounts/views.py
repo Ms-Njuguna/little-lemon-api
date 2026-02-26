@@ -2,7 +2,7 @@ from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .serializers import SignupSerializer, MeSerializer
+from .serializers import SignupSerializer, MeSerializer, VerifyEmailSerializer
 from .utils import set_verification_otp, send_verification_email
 
 class SignupView(generics.CreateAPIView):
@@ -28,3 +28,12 @@ class MeView(APIView):
 
     def get(self, request):
         return Response(MeSerializer(request.user).data)
+    
+class VerifyEmailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = VerifyEmailSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response({"detail": "Email verified successfully. You can now log in."}, status=status.HTTP_200_OK)
