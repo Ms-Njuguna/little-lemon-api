@@ -176,17 +176,17 @@ SPECTACULAR_SETTINGS = {
     # "SWAGGER_UI_FAVICON_HREF": "/static/swagger/favicon.ico",
 }
 
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# settings.py
 
-DEFAULT_FROM_EMAIL = os.getenv(
-    "DEFAULT_FROM_EMAIL",
-    "Little Lemon <no-reply@littlelemon.com>",
-)
+EMAIL_BACKEND = "accounts.email_backends.GmailApiBackend"
 
-EMAIL_HOST = os.getenv("EMAIL_HOST", "")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
-EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False") == "True"
-EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+# Ensure these match what you put in your .env
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "littlelemon.dev@gmail.com")
+
+# --- You can remove these; they aren't used by the Gmail API backend ---
+# EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, etc... 
+
+# --- Ensure GMAIL vars are consistent ---
+GMAIL_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID")
+GMAIL_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET")
+GMAIL_REFRESH_TOKEN = os.getenv("GMAIL_REFRESH_TOKEN")

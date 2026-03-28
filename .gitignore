@@ -65,6 +65,8 @@ db.sqlite3-journal
 instance/
 .webassets-cache
 
+token.pickle
+
 # Scrapy stuff:
 .scrapy
 
@@ -205,3 +207,9 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+
+credentials.json
+token.pickle
+get_gmail_token.py
+.env
