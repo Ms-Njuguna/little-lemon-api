@@ -21,6 +21,7 @@ class Command(BaseCommand):
                 "role": "staff",
                 "is_active": True,
                 "is_staff": True,
+                "is_email_verified": True,
             },
         )
         if created:
