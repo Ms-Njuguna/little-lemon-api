@@ -18,8 +18,18 @@ class GmailApiBackend(BaseEmailBackend):
         service = build('gmail', 'v1', credentials=creds)
 
         for message in email_messages:
-            # We use 'html' here; if you send plain text, change to 'plain'
-            mime_message = MIMEText(message.body, 'html')
+            # Use HTML if available, otherwise use plain body
+            content_type = 'plain'
+            body_content = message.body
+    
+            if hasattr(message, 'alternatives') and message.alternatives:
+                for content, mimetype in message.alternatives:
+                    if mimetype == 'text/html':
+                        body_content = content
+                        content_type = 'html'
+                        break
+
+            mime_message = MIMEText(body_content, content_type)
             mime_message['to'] = ', '.join(message.to)
             mime_message['subject'] = message.subject
             raw = urlsafe_b64encode(mime_message.as_bytes()).decode()

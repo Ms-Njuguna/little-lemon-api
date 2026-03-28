@@ -1,8 +1,9 @@
-# accounts/utils.py
 import random
 from datetime import timedelta
 from django.utils import timezone
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from django.conf import settings
 
 def generate_otp(length=6):
@@ -17,44 +18,49 @@ def set_verification_otp(user, minutes=10):
     user.is_active = False
     user.is_email_verified = False
     user.save(update_fields=[
-        "email_verification_code",
-        "email_verification_expires_at",
-        "is_active",
-        "is_email_verified",
+        "email_verification_code", 
+        "email_verification_expires_at", 
+        "is_active", 
+        "is_email_verified"
     ])
     return otp
 
-def send_verification_email(user, otp):
-    """Sends a 6-digit verification code to the user's email."""
-    subject = "Verify your email — Little Lemon"
-    message = (
-        f"Hi {user.full_name},\n\n"
-        f"Thank you for signing up! Your verification code is: {otp}\n\n"
-        "Please enter this code in the app to verify your email.\n\n"
-        "This code expires in 10 minutes.\n\n"
-        "— Little Lemon"
-    )
-    send_mail(
+def send_html_email(subject, recipient_email, template_name, context):
+    """Helper to send branded HTML emails from accounts."""
+    html_content = render_to_string(template_name, context)
+    text_content = strip_tags(html_content)
+    
+    email = EmailMultiAlternatives(
         subject,
-        message,
+        text_content,
         settings.DEFAULT_FROM_EMAIL,
-        [user.email],
-        fail_silently=False,
+        [recipient_email]
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send()
+
+def send_verification_email(user, otp):
+    """Sends a branded 6-digit verification code email."""
+    context = {
+        'full_name': user.full_name,
+        'otp': otp,
+        'expires': 10
+    }
+    send_html_email(
+        "Verify your email — Little Lemon",
+        user.email,
+        'emails/verify_email.html',
+        context
     )
 
 def send_welcome_email(user):
-    """Sends a welcome email after successful email verification."""
-    subject = "Welcome to Little Lemon! 🎉"
-    message = (
-        f"Hi {user.full_name},\n\n"
-        "Your email has been successfully verified. "
-        "You can now log in and enjoy our app!\n\n"
-        "— Little Lemon"
-    )
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        [user.email],
-        fail_silently=False,
+    """Sends a branded welcome email."""
+    context = {
+        'full_name': user.full_name,
+    }
+    send_html_email(
+        "Welcome to Little Lemon! 🎉",
+        user.email,
+        'emails/welcome.html',
+        context
     )

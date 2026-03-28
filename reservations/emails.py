@@ -1,34 +1,46 @@
-# reservations/emails.py
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 from django.conf import settings
 
-def send_reservation_created_email(user, reservation):
-    """Sends email when reservation is created (pending)."""
-    subject = "Reservation received (Pending) — Little Lemon"
-    message = (
-        f"Hi {user.full_name},\n\n"
-        f"We received your reservation for {reservation.date} "
-        f"({reservation.time_slot.label}). Status: {reservation.status}.\n\n"
-        "— Little Lemon"
+def send_html_email(subject, recipient_email, template_name, context):
+    """Helper function to send branded HTML emails."""
+    html_content = render_to_string(template_name, context)
+    text_content = strip_tags(html_content)
+    
+    email = EmailMultiAlternatives(
+        subject,
+        text_content,
+        settings.DEFAULT_FROM_EMAIL,
+        [recipient_email]
     )
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    email.attach_alternative(html_content, "text/html")
+    email.send()
+
+def send_reservation_created_email(user, reservation):
+    context = {
+        'full_name': user.full_name,
+        'date': reservation.date,
+        'slot': reservation.time_slot.label,
+        'guests': reservation.guests,
+        'status': 'Pending'
+    }
+    send_html_email("Reservation Received 🍋 — Little Lemon", user.email, 'emails/reservation_created.html', context)
 
 def send_reservation_confirmed_email(user, reservation):
-    """Sends email when reservation is confirmed."""
-    subject = "Reservation confirmed ✅ — Little Lemon"
-    message = (
-        f"Hi {user.full_name},\n\n"
-        f"Your reservation for {reservation.date} ({reservation.time_slot.label}) is confirmed.\n\n"
-        "— Little Lemon"
-    )
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    context = {
+        'full_name': user.full_name,
+        'date': reservation.date,
+        'slot': reservation.time_slot.label,
+        'guests': reservation.guests,
+        'table': reservation.table.table_number
+    }
+    send_html_email("Reservation Confirmed ✅ — Little Lemon", user.email, 'emails/reservation_confirmed.html', context)
 
 def send_reservation_cancelled_email(user, reservation):
-    """Sends email when reservation is cancelled."""
-    subject = "Reservation cancelled — Little Lemon"
-    message = (
-        f"Hi {user.full_name},\n\n"
-        f"Your reservation for {reservation.date} ({reservation.time_slot.label}) was cancelled.\n\n"
-        "— Little Lemon"
-    )
-    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False)
+    context = {
+        'full_name': user.full_name,
+        'date': reservation.date,
+        'slot': reservation.time_slot.label
+    }
+    send_html_email("Reservation Cancelled — Little Lemon", user.email, 'emails/reservation_cancelled.html', context)

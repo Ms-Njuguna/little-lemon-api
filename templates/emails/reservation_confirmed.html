@@ -1,0 +1,16 @@
+<div style="font-family: Arial, sans-serif; max-width: 600px; border: 1px solid #f0f0f0; padding: 20px;">
+    <h2 style="color: #495E57;">Little Lemon</h2>
+    <hr style="border: 0; border-top: 1px solid #F4CE14;">
+    <p>Hi <strong>{{ user_name }}</strong>,</p>
+    <p>Great news! Your reservation has been <strong>confirmed</strong>.</p>
+    
+    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px;">
+        <p style="margin: 5px 0;">📅 <strong>Date:</strong> {{ date }}</p>
+        <p style="margin: 5px 0;">⏰ <strong>Time:</strong> {{ slot }}</p>
+        <p style="margin: 5px 0;">👥 <strong>Guests:</strong> {{ guests }}</p>
+        <p style="margin: 5px 0;">🍽️ <strong>Table:</strong> {{ table }}</p>
+    </div>
+
+    <p style="margin-top: 20px;">We look forward to seeing you!</p>
+    <p style="color: #495E57; font-weight: bold;">— The Little Lemon Team</p>
+</div>
