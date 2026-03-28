@@ -176,10 +176,7 @@ SPECTACULAR_SETTINGS = {
     # "SWAGGER_UI_FAVICON_HREF": "/static/swagger/favicon.ico",
 }
 
-EMAIL_BACKEND = os.getenv(
-    "EMAIL_BACKEND",
-    "django.core.mail.backends.console.EmailBackend",  # local default
-)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 DEFAULT_FROM_EMAIL = os.getenv(
     "DEFAULT_FROM_EMAIL",
