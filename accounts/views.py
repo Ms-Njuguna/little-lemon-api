@@ -15,8 +15,8 @@ class SignupView(generics.CreateAPIView):
 
         user = serializer.save()
 
-        # otp = set_verification_otp(user)
-        # send_verification_email(user, otp)
+        otp = set_verification_otp(user)
+        send_verification_email(user, otp)
 
         return Response(
             {"detail": "Account created. Check your email for a verification code."},
