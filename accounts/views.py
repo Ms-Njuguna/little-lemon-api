@@ -15,8 +15,15 @@ class SignupView(generics.CreateAPIView):
 
         user = serializer.save()
 
-        otp = set_verification_otp(user)
-        send_verification_email(user, otp)
+        try:
+            otp = set_verification_otp(user)
+            print(f"OTP generated: {otp}")
+
+            send_verification_email(user, otp)
+            print("Email sent successfully")
+
+        except Exception as e:
+            print(f"🔥 ERROR in OTP/email: {e}")
 
         return Response(
             {"detail": "Account created. Check your email for a verification code."},
